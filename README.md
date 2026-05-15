@@ -1,20 +1,30 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# 🚀 Contract Conflict AI | Hackathon Project
 
-# Run and deploy your AI Studio app
+A specialized AI tool designed to scan legal documents and identify conflicting clauses, built during **Hack Nexus 2.0**.
 
-This contains everything you need to run your app locally.
+## 📌 The Problem
+Legal contracts are often dozens of pages long. When multiple contracts or amendments are involved, it is nearly impossible for a human to spot small contradictions in terms, dates, or obligations. This leads to legal disputes and financial loss.
 
-View your app in AI Studio: https://ai.studio/apps/8c2dc8a9-b82f-4edb-a3bc-65009a9c434f
+## 💡 The Solution
+**Contract Conflict AI** uses Large Language Models to "read" two or more sections of a contract and flag logical inconsistencies instantly. 
 
-## Run Locally
+## 🛠️ Tech Stack
+* **Framework:** React + Vite (Fast development)
+* **Language:** TypeScript (Type-safe code)
+* **AI Engine:** Google Gemini API
+* **Styling:** Tailwind CSS / Lucide React
 
-**Prerequisites:**  Node.js
+## ✨ Key Features
+* **Conflict Detection:** Highlighting contradictory terms in real-time.
+* **AI Summary:** Explaining *why* two clauses conflict in simple language.
+* **Developer-Ready:** Clean UI designed for legal professionals.
 
+## 🏆 Hackathon Details
+* **Event:** Hack Nexus 2.0
+* **College:** Arya College of Engineering & IT (ACEIT)
+* **Status:** Functional Prototype built in [Insert Number of Hours, e.g., 24] hours.
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## 🚀 How to Run Locally
+1. Clone the repository:
+   ```bash
+   git clone [https://github.com/HIMANSHURAWAL1327/contract-conflict-ai.git](https://github.com/HIMANSHURAWAL1327/contract-conflict-ai.git)
