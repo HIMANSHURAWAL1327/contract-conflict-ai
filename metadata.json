@@ -1,0 +1,5 @@
+{
+  "name": "Contract Conflict AI",
+  "description": "Automated legal contract conflict detection using AI to identify contradictory clauses and suggest standardized alternatives.",
+  "requestFramePermissions": []
+}
