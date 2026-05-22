@@ -22,7 +22,7 @@ Legal contracts are often dozens of pages long. When multiple contracts or amend
 ## 🏆 Hackathon Details
 * **Event:** Hack Nexus 2.0
 * **College:** Arya College of Engineering & IT (ACEIT)
-* **Status:** Functional Prototype built in [Insert Number of Hours, e.g., 24] hours.
+* **Status:** Functional Prototype built in [Hours 24] hours.
 
 ## 🚀 How to Run Locally
 1. Clone the repository:
