@@ -34,6 +34,9 @@ export default function App() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [text1, setText1] = useState<string>('');
+  const [text2, setText2] = useState<string>('');
+  const [resolutions, setResolutions] = useState<{ [key: number]: { choice: 'c1' | 'c2' | 'alt'; text: string } }>({});
 
   const handleAnalyze = async () => {
     if (!file1 || !file2) return;
@@ -41,21 +44,70 @@ export default function App() {
     setIsAnalyzing(true);
     setError(null);
     try {
-      const text1 = await extractTextFromFile(file1);
-      const text2 = await extractTextFromFile(file2);
+      const t1 = await extractTextFromFile(file1);
+      const t2 = await extractTextFromFile(file2);
       
-      if (!text1.trim() || !text2.trim()) {
+      if (!t1.trim() || !t2.trim()) {
         throw new Error("One or both files appear to be empty or could not be read.");
       }
 
-      const analysis = await analyzeContracts(text1, text2);
+      setText1(t1);
+      setText2(t2);
+
+      const analysis = await analyzeContracts(t1, t2);
       setResult(analysis);
+
+      // Initialize resolutions to use the AI alternative by default
+      const initialResolutions: { [key: number]: { choice: 'c1' | 'c2' | 'alt'; text: string } } = {};
+      analysis.conflicts.forEach((conflict, idx) => {
+        initialResolutions[idx] = {
+          choice: 'alt',
+          text: conflict.standardized_alternative
+        };
+      });
+      setResolutions(initialResolutions);
     } catch (err: any) {
       console.error(err);
       setError(err.message || "Analysis failed. Please ensure both files are valid documents.");
     } finally {
       setIsAnalyzing(false);
     }
+  };
+
+  const handleExport = (baseNum: 1 | 2) => {
+    if (!result) return;
+    const baseText = baseNum === 1 ? text1 : text2;
+    const baseFile = baseNum === 1 ? file1 : file2;
+    if (!baseText || !baseFile) return;
+
+    let resolvedText = baseText;
+    result.conflicts.forEach((conflict, idx) => {
+      const res = resolutions[idx];
+      const target = baseNum === 1 ? conflict.contract1_clause : conflict.contract2_clause;
+      const replacement = res ? res.text : (baseNum === 1 ? conflict.contract1_clause : conflict.contract2_clause);
+      
+      if (resolvedText.includes(target)) {
+        resolvedText = resolvedText.replace(target, replacement);
+      } else {
+        const cleanTarget = target.replace(/^["'\s]+|["'\s]+$/g, '').trim();
+        if (cleanTarget && resolvedText.includes(cleanTarget)) {
+          resolvedText = resolvedText.replace(cleanTarget, replacement);
+        }
+      }
+    });
+
+    const blob = new Blob([resolvedText], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    
+    const originalName = baseFile.name;
+    const baseName = originalName.substring(0, originalName.lastIndexOf('.'));
+    link.href = url;
+    link.download = `${baseName}_harmonized.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   const getSeverityColor = (severity: Conflict['severity']) => {
@@ -268,6 +320,34 @@ export default function App() {
                             </ul>
                           </div>
                         )}
+
+                        {result && (
+                          <div className="pt-8 border-t border-primary/10 space-y-6">
+                            <div>
+                              <h4 className="text-sm font-black uppercase tracking-[0.2em] text-primary flex items-center gap-2">
+                                <Zap className="w-4 h-4" />
+                                Export Harmonized Agreement
+                              </h4>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Apply all selected resolutions and export a finalized document.
+                              </p>
+                            </div>
+                            <div className="flex flex-wrap gap-4">
+                              <Button 
+                                onClick={() => handleExport(1)} 
+                                className="bg-primary/20 text-primary border border-primary/30 hover:bg-primary/30 hover:scale-[1.02] active:scale-[0.98] transition-all font-bold px-6 py-4 h-12 rounded-xl"
+                              >
+                                Export Contract A (Base)
+                              </Button>
+                              <Button 
+                                onClick={() => handleExport(2)} 
+                                className="bg-accent/20 text-accent border border-accent/30 hover:bg-accent/30 hover:scale-[1.02] active:scale-[0.98] transition-all font-bold px-6 py-4 h-12 rounded-xl"
+                              >
+                                Export Contract B (Base)
+                              </Button>
+                            </div>
+                          </div>
+                        )}
                       </CardContent>
                     </Card>
 
@@ -319,17 +399,93 @@ export default function App() {
                                   </div>
                                 </div>
 
-                                <div className="p-6 rounded-2xl bg-accent/5 border border-accent/20 space-y-4 relative overflow-hidden group-hover:bg-accent/10 transition-colors">
-                                  <div className="absolute top-0 right-0 p-4 opacity-10">
-                                    <ShieldCheck className="w-12 h-12 text-accent" />
+                                {/* Interactive Resolution Panel */}
+                                <div className="space-y-6 border-t border-primary/10 pt-6">
+                                  <div className="flex items-center justify-between">
+                                    <p className="text-xs font-black uppercase tracking-[0.2em] text-accent flex items-center gap-2">
+                                      <CheckCircle2 className="w-4 h-4 text-accent" />
+                                      Resolution Strategy
+                                    </p>
+                                    <Badge className="bg-accent/10 text-accent border border-accent/20 font-bold">
+                                      Active: {(() => {
+                                        const choice = resolutions[idx]?.choice;
+                                        if (choice === 'c1') return 'Contract A Clause';
+                                        if (choice === 'c2') return 'Contract B Clause';
+                                        return 'AI Custom';
+                                      })()}
+                                    </Badge>
                                   </div>
-                                  <div className="flex items-center gap-3 text-accent">
-                                    <CheckCircle2 className="w-5 h-5" />
-                                    <p className="text-xs font-black uppercase tracking-[0.2em]">Recommended Alternative</p>
+                                  
+                                  <div className="grid grid-cols-3 gap-4">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setResolutions(prev => ({
+                                          ...prev,
+                                          [idx]: { choice: 'c1', text: conflict.contract1_clause }
+                                        }));
+                                      }}
+                                      className={cn(
+                                        "py-3 px-4 rounded-xl text-xs font-bold border transition-all cursor-pointer text-center",
+                                        resolutions[idx]?.choice === 'c1'
+                                          ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20"
+                                          : "bg-black/20 text-muted-foreground border-primary/10 hover:text-foreground hover:border-primary/30"
+                                      )}
+                                    >
+                                      Use Contract A
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setResolutions(prev => ({
+                                          ...prev,
+                                          [idx]: { choice: 'c2', text: conflict.contract2_clause }
+                                        }));
+                                      }}
+                                      className={cn(
+                                        "py-3 px-4 rounded-xl text-xs font-bold border transition-all cursor-pointer text-center",
+                                        resolutions[idx]?.choice === 'c2'
+                                          ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20"
+                                          : "bg-black/20 text-muted-foreground border-primary/10 hover:text-foreground hover:border-primary/30"
+                                      )}
+                                    >
+                                      Use Contract B
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setResolutions(prev => ({
+                                          ...prev,
+                                          [idx]: { choice: 'alt', text: conflict.standardized_alternative }
+                                        }));
+                                      }}
+                                      className={cn(
+                                        "py-3 px-4 rounded-xl text-xs font-extrabold border transition-all cursor-pointer text-center",
+                                        resolutions[idx]?.choice === 'alt'
+                                          ? "bg-accent text-accent-foreground border-accent shadow-lg shadow-accent/20"
+                                          : "bg-black/20 text-muted-foreground border-primary/10 hover:text-foreground hover:border-primary/30"
+                                      )}
+                                    >
+                                      Use AI Alt
+                                    </button>
                                   </div>
-                                  <p className="text-base font-semibold text-foreground leading-relaxed pl-8">
-                                    {conflict.standardized_alternative}
-                                  </p>
+
+                                  <div className="space-y-2">
+                                    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/40">Resolved Clause (Editable)</label>
+                                    <textarea
+                                      value={resolutions[idx]?.text || ''}
+                                      onChange={(e) => {
+                                        const val = e.target.value;
+                                        setResolutions(prev => ({
+                                          ...prev,
+                                          [idx]: { ...(prev[idx] || { choice: 'alt' }), text: val }
+                                        }));
+                                      }}
+                                      rows={3}
+                                      className="w-full p-4 rounded-xl bg-black/40 border border-primary/20 text-foreground text-sm font-serif focus:outline-none focus:border-accent transition-colors resize-y leading-relaxed"
+                                      placeholder="Edit the resolved clause text here..."
+                                    />
+                                  </div>
                                 </div>
                               </div>
                             </Card>
